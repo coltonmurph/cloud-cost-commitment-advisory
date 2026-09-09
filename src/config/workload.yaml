@@ -1,0 +1,72 @@
+# Assemble Clothing (UK) Ltd — workload definition
+# Used by the simulation to size instance counts per tier and look up
+# matching prices from the normalized Azure/AWS pricing dataset.
+
+regions:
+  azure: "uksouth"
+  aws: "us-east-1"
+  # Azure = primary HQ region, AWS = primary customer-traffic region.
+  # Comparing cost in both lets us check whether the current setup
+  # (wherever Assemble actually runs today) is the cheap option.
+
+currency: "USD"
+
+tiers:
+  web:
+    description: "Front-end / storefront servers"
+    baseline_instances: 8
+    min_instances: 4
+    max_instances: 80
+    autoscales: true
+    azure_sku: "Standard_D4s_v5"
+    aws_instance_type: "m6i.xlarge"
+
+  app:
+    description: "App / API servers"
+    baseline_instances: 6
+    min_instances: 4
+    max_instances: 60
+    autoscales: true
+    azure_sku: "Standard_F8s_v2"
+    aws_instance_type: "c6i.2xlarge"
+
+  cache_search:
+    description: "Caching + search layer"
+    baseline_instances: 2
+    min_instances: 2
+    max_instances: 8
+    autoscales: true
+    azure_sku: "Standard_E4s_v5"
+    aws_instance_type: "r6i.large"
+
+  database:
+    description: "Primary + read replicas, does not autoscale"
+    baseline_instances: 3
+    min_instances: 3
+    max_instances: 3
+    autoscales: false
+    azure_sku: "Standard_E8ds_v5"          # self-managed Postgres on VM
+    azure_managed_service: "Azure Database for PostgreSQL Flexible Server"
+    aws_instance_type: "r6i.2xlarge"
+    aws_managed_service: "Amazon RDS for PostgreSQL"
+
+storage:
+  object_storage_tb: 8
+  azure_service: "Blob Storage (Hot tier)"
+  aws_service: "Amazon S3 (Standard)"
+
+pricing_models:
+  - on_demand
+  - reserved_1yr
+  - reserved_3yr
+  - savings_plan   # AWS only, compute tiers only
+
+traffic_drivers:
+  monthly_drop:
+    frequency_per_year: 12
+    multiplier_range: [10, 20]
+    duration_minutes_range: [30, 90]
+  holiday_ramp:
+    months: ["November", "December"]
+    multiplier_range: [3, 4]
+    duration_weeks: 6
